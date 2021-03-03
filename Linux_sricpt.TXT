@@ -1,0 +1,318 @@
+
+-- Linux在具有高穩定性、可靠性的同時，具有很好的可伸縮性和擴展性，能夠針對不同的應用和硬體環境調整，優化出滿足當前應用需要的最佳性能。因此企業在維護Linux系統、進行系統調優時，瞭解系統性能分析工具是至關重要的。
+
+--************查看服務***********************************/
+--重啟mssql的服務
+--關閉mssql的服務
+--開啟mssql的服務
+--查看mssql服務狀態
+--******************工作排程****************************/
+--查看crontab例行性工作排程 
+--設定crontab例行性工作排程
+--查看指定使用者的crontab
+--編輯指定使用者的crontab
+--刪除crontab內容
+--******************查看特定內容**************************/
+--查看系統LOG
+--查看特定路徑下所有文件內容的關鍵字
+--查看系統容量大小
+--顯示系統時間
+--查看該目錄個檔案大小
+--查看Tomcat版本
+--********************系統監控****************************/
+--即時顯示所有系統運行程式佔比_TOP
+--ist_of_useful_hot_keys
+--查看系統程式記憶體佔用最高的前幾名
+--以秒為單位監控虛擬記憶體跟硬碟讀寫vmstat
+--到指定路徑下尋找特定OOM控制檔案
+--換算特定服務的記憶體用量
+--查看運行時間
+--查看登入到此OS的使用者
+--抓出前10個記憶體消耗過大的程序
+--將程序變成樹狀
+--可用記憶體大小
+--查看多個CPU各自的執行狀態
+--**********在linux環境中執行程式*******************/
+--執行kettle 
+
+--*******************************************************/
+--啟用 SQL Server Agent
+--如果組態值設定_過度調配記憶體_造成伺服器無法啟動_這就很有用。
+--查看默認防火牆狀態：（關閉後顯示notrunning，開啟後顯示running）
+--查看已經開放的端口：
+--開啟端口：
+--命令含義： 
+--***********************重啟防火牆*******************************/
+--重啟防火牆：
+--查看防火牆狀態：
+--查看防火牆狀態：
+--停止firewall:
+--啟動firewall:
+--重啟firewall:
+--開機啟動firewall:
+--禁止firewall開機啟動：098
+--查看firewall是否開機啟動：
+
+--*************************管理目錄***************************/
+--新增目錄_並設定權限_124
+--刪除目錄
+--掛載資料夾
+--卸載資料夾
+
+--*************************修改檔案權限***************************/
+--修改特定帳戶的群組_修改esunfhcadmin
+--將檔案 myfile 的擁有者改為 myuser
+--同時更改擁有者與群組
+--遞迴更改整個目錄下的所有檔案
+--修改特定檔案權限的指令
+--****************Vi文件編輯*******************************/
+--將編輯的資料寫入硬碟檔案中
+--強制寫入該檔案。若檔案屬性為『唯讀』時，！
+--離開
+--強制離開不儲存檔案。
+--儲存後離開
+--詳細內容
+--********************************************************/
+
+--查看Tomcat版本
+$ java -cp lib/catalina.jar org.apache.catalina.util.ServerInfo
+
+
+--將編輯的資料寫入硬碟檔案中
+:w
+
+--強制寫入該檔案。若檔案屬性為『唯讀』時，！	
+:w!	
+
+--離開
+:q	
+
+--強制離開不儲存檔案。
+:q!	
+
+--儲存後離開
+--若為:wq!_則為強制儲存後離開 (常用)
+:wq	
+
+--*詳細內容
+按ESC键 跳到命令模式，然后：
+:w 保存文件但不退出vi
+:w file 将修改另外保存到file中，不退出vi
+:w! 强制保存，不推出vi
+:wq 保存文件并退出vi
+:wq! 强制保存文件，并退出vi
+q: 不保存文件，退出vi
+:q! 不保存文件，强制退出vi
+:e! 放弃所有修改，从上次保存文件开始再编辑
+
+--* 同時更改擁有者與群組
+sudo chown myuser:mygroup myfile
+--* 將檔案 myfile 的群組改為 mygroup
+sudo chown :mygroup myfile
+
+--*將檔案 myfile 的擁有者改為 myuser
+sudo chown myuser myfile
+
+--*修改特定帳戶的群組_修改esunfhcadmin
+usermod -g mssql esunfhcadmin
+
+--*遞迴更改整個目錄下的所有檔案
+sudo chown -R myuser:mygroup myfolder
+
+--*修改特定檔案權限的指令
+sudo chown mssql:mssql FENG_XIANG.BAK
+
+--*啟用 SQL Server Agent
+sudo /opt/mssql/bin/mssql-conf set sqlagent.enabled true 
+
+
+--如果組態值設定_過度調配記憶體_造成伺服器無法啟動_這就很有用。
+sudo -u mssql /opt/mssql/bin/sqlservr -f
+
+
+--*查看默認防火牆狀態：（關閉後顯示notrunning，開啟後顯示running）
+firewall-cmd --state
+　　
+--*查看已經開放的端口：
+firewall-cmd --list-ports
+
+--*開啟端口：
+firewall-cmd --zone=public --add-port=80/tcp --permanent
+
+--*命令含義： 
+–zone #作用域 
+–add-port=80/tcp #添加端口，格式為：端口/通訊協議 
+–permanent #永久生效，沒有此參數重啟後失效
+
+--*重啟防火牆：
+firewall-cmd --reload #重啟firewall
+systemctl:
+
+--*查看防火牆狀態：
+systemctl list-unit-files|grep firewalld.service             #disabled防火牆處於關閉狀態
+--*查看防火牆狀態：
+systemctl status firewalld.service                           #dead防火牆處於關閉狀態
+
+　　
+--*停止firewall:
+systemctl stop firewalld.service
+
+--*啟動firewall:
+systemctl start firewalld.service
+
+--*重啟firewall:
+systemctl restart firewalld.service
+
+--*開機啟動firewall:
+systemctl enable firewalld.service
+
+--*禁止firewall開機啟動：
+systemctl disable firewalld.service
+
+--*查看firewall是否開機啟動：
+systemctl is-enabled firewalld.service;echo $?
+
+--執行kettle 
+cd /home/thresh/work_tool/pdi-ce-6.0.1.0-386/data-integration
+sh spoon.sh
+
+--設定crontab例行性工作排程
+crontab -e
+
+--查看crontab例行性工作排程
+crontab -l
+
+--查看指定使用者的crontab
+sudo crontab -u gtwang -l
+
+--編輯指定使用者的crontab
+crontab -u gtwang -e
+
+--刪除crontab內容
+crontab -r
+
+
+--每天早上 8 點 30 分執行
+30 08 * * */root/restartsql.sh 
+
+--到指定路徑下尋找特定OOM控制檔案
+--14909是你服務的PID
+cd /proc/14909
+
+--控制分數-17代表不能被kill掉
+echo -17 > /proc/14909/oom_adj
+
+--換算特定服務的記憶體用量
+ps aux | grep  sqlservr | awk '{ total += $6; } END { print total/1024"MB" }'
+
+--*查看該目錄個檔案大小
+ll -h
+
+--*查看系統容量大小
+df -h
+
+--*顯示系統時間
+sudo hwclock
+
+--*重啟mssql的服務
+systemctl restart mssql-server.service
+
+sudo systemctl restart mssql-server
+
+--*關閉mssql的服務
+sudo systemctl stop mssql-server
+
+--*開啟mssql的服務
+sudo systemctl start mssql-server
+
+--查看系統LOG
+/var/log/messages
+
+--查看特定路徑下所有文件內容的關鍵字
+grep '36S' *.*
+
+
+--*查看系統程式記憶體佔用最高的前幾名
+ps -eo pid,ppid,cmd,%mem,%cpu --sort=-%mem | head
+
+--*即時顯示所有系統運行程式佔比_TOP
+TOP
+
+--list_of_useful_hot_keys*/
+t 跟m --都是換顯示方式
+
+A --是以各自使用者為分類調整
+
+f --調整想要顯示的項目 先按enter再按空白鍵(似乎有最大上限)
+
+--以秒為單位監控虛擬記憶體跟硬碟讀寫vmstat
+vmstat -S M 2  
+--
+欄位說明：
+Procs（進程）：
+r: 運行佇列中進程數量
+b: 等待IO的進程數量
+Memory（記憶體）：
+swpd: 使用虛擬記憶體大小
+free: 可用記憶體大小
+buff: 用作緩衝的記憶體大小
+cache: 用作緩存的記憶體大小
+Swap：
+si: 每秒從交換區寫到記憶體的大小
+so: 每秒寫入交換區的記憶體大小
+IO：（現在的Linux版本塊的大小為1024bytes）
+bi: 每秒讀取的塊數
+bo: 每秒寫入的塊數
+系統：
+in: 每秒中斷數，包括時鐘中斷。
+cs: 每秒上下文切換數。
+CPU（以百分比表示）：
+us: 使用者進程執行時間(user time)
+sy: 系統進程執行時間(system time)
+id: 閒置時間(包括IO等待時間),中央處理器的閒置時間 。以百分比表示。
+wa: 等待IO時間
+備註： 如果 r經常大於 4 ，且id經常少於40，表示cpu的負荷很重。如果pi，po 長期不等於0，表示記憶體不足。如果disk 經常不等於0， 且在 b中的佇列 大於3， 表示 io性能不好。
+*/
+
+--查看運行時間
+uptime
+ Swatch 
+--查看登入到此OS的使用者 Swatch
+w
+
+--*查看mssql服務狀態
+systemctl status mssql-server
+
+--顯示所有進程
+ps -A
+ps -lax     -aux  --資訊極為詳細　　
+
+
+--抓出前10個記憶體消耗過大的程序
+# ps -auxf | sort -nr -k 4 | head -10
+
+
+--將程序變成樹狀
+pstree
+
+--可用記憶體大小
+free
+
+--查看多個CPU各自的執行狀態
+mpstat -P ALL
+
+
+--新增目錄_並設定權限_124
+mkdir -m 775 bakup
+
+--刪除目錄
+rmdir  bakup
+
+--掛載資料夾
+sudo mount -t nfs 你要指定的路徑 在本機的路徑
+sudo mount -t nfs 192.168.222.220:/volume1/DBBackup/ES_IFRSRPDB_BAKUP_114 /var/opt/mssql/bakup
+
+--卸載資料夾
+umount dir 路徑
+umount dir /root/nfsshare
+
