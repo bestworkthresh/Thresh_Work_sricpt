@@ -25,9 +25,13 @@
 --判斷資料的內容
 --快速開啟組態管理員
 --新增使用者與對應登入者
+--移轉結構描述擁有權
+
+/*******************************************************USER跟LOGIN****************************/
 --新增使用者權限_用lluser為例
 --修改使用者權限_用lluser為例
---移轉結構描述擁有權
+--新增LOGIN
+--新增USER並綁定LOGIN並把權限提高到OWNER
 
 /*******************************************************資料表****************************/
 --快速取得資料表所有欄位的名稱
@@ -81,7 +85,7 @@
 --查資料庫所在的主機個別還有多少容量
 --查出所有資料庫建立路徑
 --查各個資料庫佔用多少空間
---查詢_SQL_Server_上面全部資料庫的檔案大小
+--查詢_SQL_Server_上面全部資料庫的檔案大小_含邏輯檔
 --查看資料庫最後一次備份是哪個時後
 --查看單個資料庫所在的磁碟機有多少容量
 --查看SQL服務啟動時間
@@ -181,6 +185,7 @@
 --VALUES的用法_成為一筆資料
 --算出兩個日期的差距
 --加減日期
+--查資料庫使用者帳密
 
 /********************************************************************定序************************/
 --查詢伺服器的所有可用定序
@@ -204,8 +209,11 @@ SELECT CONVERT (VARCHAR(50), DATABASEPROPERTYEX('資料庫名稱','collation'));
 SELECT CONVERT(varchar, SERVERPROPERTY('collation'));
 
 
---修改數據庫定序
-ALTER DATABASE '資料庫名稱' COLLATE Chinese_PRC_CS_AS
+--修改數據庫定序(注意一下，假如裡面已經有資料了，這動作不會修改到原先資料的定序)
+USE [master]
+GO
+ALTER DATABASE [IFRSRPDB] COLLATE Chinese_Taiwan_Stroke_CI_AS
+GO
 
 
 --修改cloumns定序
@@ -570,9 +578,17 @@ SELECT distinct volume_mount_point as '磁碟代號', total_bytes/1024/1024/1024
 FROM sys.master_files AS f
 CROSS APPLY sys.dm_os_volume_stats(f.database_id, f.file_id);
 
---查詢_SQL_Server_上面全部資料庫的檔案大小
-SELECT DB_NAME(database_id) N'資料庫', physical_name N'實體檔案', type_desc N'檔案類型', state_desc N'檔案狀態', size*8.0/1024 N'檔案大小(MB)'
+--查詢_SQL_Server_上面全部資料庫的檔案大小_含邏輯檔
+SELECT 
+DB_NAME(database_id) N'資料庫',
+[name] N'邏輯檔案名稱',
+physical_name N'實體檔案', 
+type_desc N'檔案類型', 
+state_desc N'檔案狀態', 
+size*8.0/1024 N'檔案大小(MB)',
+max_size N'檔案上限'
 FROM sys.master_files
+order by 5 desc 
 
 --列出所有資料庫檔案所在磁碟空間資訊_看不到本身資料庫有多大
 SELECT DB_NAME(f.database_id) as '資料庫名稱' 
@@ -2270,3 +2286,74 @@ EXEC XP_CMDSHELL 'net use Z: /delete'
 */
 
 
+--新增LOGIN
+CREATE LOGIN [jhdfmadm] WITH PASSWORD=N'JHDfm@dm19', DEFAULT_DATABASE=[master], DEFAULT_LANGUAGE=[繁體中文], CHECK_EXPIRATION=OFF, CHECK_POLICY=OFF
+GO
+
+--新增USER並綁定LOGIN並把權限提高到OWNER
+CREATE USER [jhdfmadm] FOR LOGIN [jhdfmadm] WITH DEFAULT_SCHEMA=[dbo]
+GO
+ALTER ROLE [db_owner] ADD MEMBER [jhdfmadm]
+GO
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--查資料庫使用者帳密
+USE DBUSE_THRESH
+GO 
+
+DECLARE @PROJECT_NAME   NVARCHAR(50)        SET @PROJECT_NAME   ='ALL'      --PROJECT_NAME  
+DECLARE @IP             NVARCHAR(50)        SET @IP             ='ALL'      --IP            
+DECLARE @STAGE_DESC     NVARCHAR(50)        SET @STAGE_DESC     ='ALL'      --STAGE_DESC    
+DECLARE @USER           NVARCHAR(50)        SET @USER           ='ALL'      --USER          
+DECLARE @PASSWORD       NVARCHAR(50)        SET @PASSWORD       ='ALL'      --PASSWORD      
+DECLARE @PROJECT_DESC   NVARCHAR(50)        SET @PROJECT_DESC   ='ALL'      --PROJECT_DESC  
+DECLARE @PROJECT_STAGE  NVARCHAR(50)        SET @PROJECT_STAGE  ='ALL'      --PROJECT_STAGE 
+DECLARE @DB_VERSION     NVARCHAR(50)        SET @DB_VERSION     ='ALL'      --DB_VERSION    
+
+
+SELECT      [PK_CODE]
+           ,[PROJECT_NAME]
+           ,[IP]
+           ,[STAGE_DESC]
+           ,[USER]
+           ,[PASSWORD]
+           ,[PROJECT_DESC]
+           ,[PROJECT_STAGE]
+           ,[DB_VERSION] FROM [TH_SYS_DATABASE_LIST]
+WHERE 
+    (([PROJECT_NAME]    =  @PROJECT_NAME  ) OR ( @PROJECT_NAME   = 'ALL') )
+ AND(([IP]              =  @IP            ) OR ( @IP             = 'ALL') )
+ AND(([STAGE_DESC]      =  @STAGE_DESC    ) OR ( @STAGE_DESC     = 'ALL') )
+ AND(([USER]            =  @USER          ) OR ( @USER           = 'ALL') )
+ AND(([PASSWORD]        =  @PASSWORD      ) OR ( @PASSWORD       = 'ALL') )
+ AND(([PROJECT_DESC]    =  @PROJECT_DESC  ) OR ( @PROJECT_DESC   = 'ALL') )
+ AND(([PROJECT_STAGE]   =  @PROJECT_STAGE ) OR ( @PROJECT_STAGE  = 'ALL') )
+ AND(([DB_VERSION]      =  @DB_VERSION    ) OR ( @DB_VERSION     = 'ALL') )
