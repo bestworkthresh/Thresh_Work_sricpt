@@ -8,3 +8,6 @@
 
 雖然我寫完的當下表情是下圖就是
 ![Alt text](https://i.imgur.com/mi8oxcZ.jpg)
+
+
+##我是誰?、我在哪?、我做了什麼?
