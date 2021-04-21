@@ -94,7 +94,7 @@
 --查看特定資料表哪個欄位是主鍵值
 --確認你的SQL_AGENT是否開起的語法
 --SQL執行中的程式的狀態
---查詢_所有的_資料庫對應使用權限
+--查詢_所有使用者的_資料庫對應使用權限
 --查出特定使用者的權限分布並完整顯示出來並包裝成物件權限給與SQL指令
 --查驗資料庫的查詢是否加密
 --檢視所有資料庫IO狀態
@@ -1402,7 +1402,7 @@ FROM (
 ) AS  NEW 
 WHERE [UserName]= @USERNAME
 
---查詢_所有的_資料庫對應使用權限
+--查詢_所有使用者的_資料庫對應使用權限
 /*建立暫存資料表*/
 IF EXISTS (select * from tempdb.sys.tables where name= '##DBNAME')
 
@@ -1433,8 +1433,9 @@ Where g.principal_id = m.role_principal_id And u.principal_id = m.member_princip
 Order by 1, 2, 3' 
 
 /*輸出結果*/
-select * from ##DBNAME  
---where DBName IN ('LLMARG','LLRPDB','LLRPBK','LLSTG','LLIFRS','LLIFRSBK','LLIFRSDB')
+select MemberName,DBName,DBRole from ##DBNAME  
+where DBName NOT IN ('master','tempdb','model','msdb')
+order by 1,2
 
 --SQL執行中的程式的狀態
 SELECT session_id N'工作階段識別碼',status N'要求的狀態',
