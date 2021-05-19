@@ -196,6 +196,14 @@
 --運算式層級定序
 /***************************************************************************************************************************************************************************/
 
+
+
+SELECT * FROM INFORMATION_SCHEMA.SCHEMATA
+
+
+ALTER AUTHORIZATION ON SCHEMA::[db_owner] TO [dbo]
+
+
 --查詢伺服器的所有可用定序
 　select * from ::fn_helpcollations() 
 
@@ -248,7 +256,7 @@ millisecond                --縮寫    ms
 microsecond             --縮寫    mcs
 nanosecond              --縮寫    ns
 
-
+ 
 
 --VALUES的用法_成為一筆資料
 SELECT * FROM (VALUES (GETDATE(),'Clounms_values')) as cur(DATIME,CLOUNMS_NAME) 
@@ -1968,6 +1976,18 @@ CREATE DATABASE OTBTMAGR_OLD ON
 (NAME = N'OTBTMAGR_OLD_log' , FILENAME = N'D:\DBDATAVOL\OTBTMAGR_OLD_log.ldf')
 FOR ATTACH
 GO
+
+
+--修改資料庫關閉唯讀(通常是因為資料夾權限問題)
+use [LOSSEIDB_SKL_SIT];
+GO
+use [master];
+GO
+USE [master]
+GO
+ALTER DATABASE [LOSSEIDB_SKL_SIT] SET  READ_WRITE WITH NO_WAIT
+GO
+
 
 --將資料庫更改為非單一使用者模式
 ALTER DATABASE OTBTMAGR_OLD
