@@ -79,6 +79,9 @@
 --查詢資料表是否為同義字或是其他的東西
 --查出特定欄位出現在資料庫的哪些資料表中
 --查出所有資料表的資料筆數
+--看資料表佔資料庫多少大小
+--查出所有資料表的資料筆數跟占用大小
+
 
 /********************************************************查看資料庫狀態***************************/
 --列出資料庫檔案所在磁碟空間資訊
@@ -186,6 +189,8 @@
 --算出兩個日期的差距
 --加減日期
 --查資料庫使用者帳密
+--取得當月的第一天
+--當月的最後一天
 
 /********************************************************************定序************************/
 --查詢伺服器的所有可用定序
@@ -194,6 +199,10 @@
 --修改數據庫定序
 --修改cloumns定序
 --運算式層級定序
+
+/********************************************************************資料庫寄信************************/
+--利用DB寄信範本
+
 /***************************************************************************************************************************************************************************/
 
 
@@ -487,7 +496,7 @@ select object_schema_name(i.object_id) as [schema],
     from sys.indexes i
     join sys.partition_schemes s on i.data_space_id = s.data_space_id
 
---看資料表佔資料庫多少大小_非常好用
+--看資料表佔資料庫多少大小
 SELECT s_name [結構],
        name [TableName],
        [rows],
@@ -538,6 +547,30 @@ FROM
             o.modify_date) T
 ORDER BY --2    --TableName
  4 DESC
+
+--查出所有資料表的資料筆數跟占用大小
+USE FMS 
+GO
+SELECT t.NAME AS TableName, 
+ s.Name AS SchemaName,
+ p.rows AS RowCounts,
+ SUM(a.total_pages) * 8 /1024 AS TotalSpaceMB,
+ SUM(a.used_pages) * 8 /1024 AS UsedSpaceMB,
+ (SUM(a.total_pages) - SUM(a.used_pages)) * 8 /1024 AS UnusedSpaceMB
+FROM sys.tables t
+INNER JOIN sys.indexes i ON t.OBJECT_ID = i.object_id
+INNER JOIN sys.partitions p ON i.object_id = p.OBJECT_ID
+AND i.index_id = p.index_id
+INNER JOIN sys.allocation_units a ON p.partition_id = a.container_id
+LEFT OUTER JOIN sys.schemas s ON t.schema_id = s.schema_id
+WHERE t.NAME NOT LIKE 'dt%'
+  AND t.is_ms_shipped = 0
+  AND i.OBJECT_ID > 255
+GROUP BY t.Name,
+         s.Name,
+         p.Rows
+ORDER BY t.Name
+
 
 --查詢資料表流水號是哪個欄位
 SELECT  Column_Name 
@@ -2318,31 +2351,11 @@ ALTER ROLE [db_owner] ADD MEMBER [jhdfmadm]
 GO
 
 
+--取得當月的第一天
+SELECT DATEADD(M, DATEDIFF(M,0,GETDATE()),0)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+--當月的最後一天
+SELECT DATEADD(DAY ,-1, DATEADD(M, DATEDIFF(M,0,GETDATE())+1,0))  
 
 
 
@@ -2378,3 +2391,60 @@ WHERE
  AND(([PROJECT_DESC]    =  @PROJECT_DESC  ) OR ( @PROJECT_DESC   = 'ALL') )
  AND(([PROJECT_STAGE]   =  @PROJECT_STAGE ) OR ( @PROJECT_STAGE  = 'ALL') )
  AND(([DB_VERSION]      =  @DB_VERSION    ) OR ( @DB_VERSION     = 'ALL') )
+
+
+--利用DB寄信範本
+DECLARE @receiveMail VARCHAR(MAX)= 'Leah.liu@fundrich.com.tw'
+     DECLARE @receiveMailCC VARCHAR(MAX)= 'Thresh.Hung@fundrich.com.tw'
+    --DECLARE @receiveMailCC VARCHAR(MAX)= 'Eric.Tan@fundrich.com.tw'
+    DECLARE @DATE DATETIME = (SELECT MAX(CDATE) FROM OFD300 WHERE   CDATE < DATEADD(M, DATEDIFF(M,0,GETDATE()),0))
+
+    SELECT
+    CDATE,CRNCY_CD,EX_RATE
+    INTO [Reserv20170829].[dbo].[ZZ_SMSResult]
+    FROM OFD300
+    WHERE CDATE = @DATE
+
+         DECLARE @separator char(1) = char(9);
+         DECLARE @attachfilecount INT =1;
+         DECLARE @csvfilename nvarchar(256);
+         DECLARE @str_subject VARCHAR(MAX)
+         DECLARE @str_query VARCHAR(MAX)
+         DECLARE @str_body VARCHAR(MAX)
+
+              BEGIN
+                          SET @str_query  = 'SET NOCOUNT ON;'
+                              + '     SELECT * FROM [Reserv20170829].[dbo].[ZZ_SMSResult] order by 發送日期'
+
+                          SET @str_body  = 'Hi :
+
+                       每月簡訊檢查,請參考附檔!';
+
+                       SET @csvfilename  =  'd:\'+REPLACE(CONVERT(VARCHAR(10),GETDATE(),121),'-','')+'__FOR_稽核CHK'+'.csv'
+                          SET @str_subject  =  'about 取上個月最後一天匯率'
+
+                    PRINT @str_query
+                    PRINT @str_body
+                    PRINT @csvfilename
+                    PRINT @str_subject
+            END
+
+                       EXEC msdb.dbo.sp_send_dbmail
+                          @profile_name ='DB警訊',
+                          @recipients = @receiveMail,--主要收信者
+                          @copy_recipients = @receiveMailCC,--副件
+                          @body = @str_body,
+                          @subject = @str_subject,
+                          @sensitivity='Confidential',
+                          @query = @str_query,
+                          @attach_query_result_as_file = @attachfilecount,
+                          @query_result_header=1,
+                          @query_attachment_filename = @csvfilename,
+                          @query_result_separator = @separator,
+                          @query_result_no_padding = 1,
+                          @query_result_width=32767
+
+                END
+				
+				
+				
