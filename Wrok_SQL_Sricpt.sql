@@ -200,9 +200,6 @@
 --修改cloumns定序
 --運算式層級定序
 
-/********************************************************************資料庫寄信************************/
---利用DB寄信範本
-
 /***************************************************************************************************************************************************************************/
 
 
@@ -593,10 +590,11 @@ select 'SELECT * FROM ::fn_listextendedproperty(NULL, ''user'', ''dbo'', ''table
 select 'SELECT * FROM ::fn_listextendedproperty(NULL, ''user'', ''dbo'', ''table'', '''+name+''', ''column'', NULL)' from sys.tables
 
 --取得資料表單個欄位註記說明
-SELECT value FROM ::fn_listextendedproperty(NULL, 'user', 'dbo', 'table', '資料表名稱', 'column', '欄位名稱')
+SELECT * FROM ::fn_listextendedproperty(NULL, 'user', 'dbo', 'table', '資料表名稱', 'column', '欄位名稱')
 
 --取得資料表所有欄位註記說明
-SELECT * FROM ::fn_listextendedproperty(NULL, 'user', 'dbo', 'table', '資料表名稱', 'column', NULL)
+SELECT '    ,'+objname, '           --'+convert (varchar(50),value,120),objtype,name
+FROM ::fn_listextendedproperty(NULL, 'user', 'dbo', 'table', '資料表名稱', 'column', NULL)
 
 --取得資料表註記說明
 SELECT * FROM ::fn_listextendedproperty(NULL, 'user', 'dbo', 'table', '資料表名稱', NULL, NULL)
@@ -2393,58 +2391,6 @@ WHERE
  AND(([DB_VERSION]      =  @DB_VERSION    ) OR ( @DB_VERSION     = 'ALL') )
 
 
---利用DB寄信範本
-DECLARE @receiveMail VARCHAR(MAX)= 'Leah.liu@fundrich.com.tw'
-     DECLARE @receiveMailCC VARCHAR(MAX)= 'Thresh.Hung@fundrich.com.tw'
-    --DECLARE @receiveMailCC VARCHAR(MAX)= 'Eric.Tan@fundrich.com.tw'
-    DECLARE @DATE DATETIME = (SELECT MAX(CDATE) FROM OFD300 WHERE   CDATE < DATEADD(M, DATEDIFF(M,0,GETDATE()),0))
-
-    SELECT
-    CDATE,CRNCY_CD,EX_RATE
-    INTO [Reserv20170829].[dbo].[ZZ_SMSResult]
-    FROM OFD300
-    WHERE CDATE = @DATE
-
-         DECLARE @separator char(1) = char(9);
-         DECLARE @attachfilecount INT =1;
-         DECLARE @csvfilename nvarchar(256);
-         DECLARE @str_subject VARCHAR(MAX)
-         DECLARE @str_query VARCHAR(MAX)
-         DECLARE @str_body VARCHAR(MAX)
-
-              BEGIN
-                          SET @str_query  = 'SET NOCOUNT ON;'
-                              + '     SELECT * FROM [Reserv20170829].[dbo].[ZZ_SMSResult] order by 發送日期'
-
-                          SET @str_body  = 'Hi :
-
-                       每月簡訊檢查,請參考附檔!';
-
-                       SET @csvfilename  =  'd:\'+REPLACE(CONVERT(VARCHAR(10),GETDATE(),121),'-','')+'__FOR_稽核CHK'+'.csv'
-                          SET @str_subject  =  'about 取上個月最後一天匯率'
-
-                    PRINT @str_query
-                    PRINT @str_body
-                    PRINT @csvfilename
-                    PRINT @str_subject
-            END
-
-                       EXEC msdb.dbo.sp_send_dbmail
-                          @profile_name ='DB警訊',
-                          @recipients = @receiveMail,--主要收信者
-                          @copy_recipients = @receiveMailCC,--副件
-                          @body = @str_body,
-                          @subject = @str_subject,
-                          @sensitivity='Confidential',
-                          @query = @str_query,
-                          @attach_query_result_as_file = @attachfilecount,
-                          @query_result_header=1,
-                          @query_attachment_filename = @csvfilename,
-                          @query_result_separator = @separator,
-                          @query_result_no_padding = 1,
-                          @query_result_width=32767
-
-                END
 				
 				
 				
