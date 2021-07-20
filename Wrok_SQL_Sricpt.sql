@@ -1,3 +1,10 @@
+/*
+作者:Thresh
+建立日期:20210715
+修改日期:20210720
+修改內容:修改大小寫內容
+
+*/
 --目錄
 /*****************************************************判斷相關**********************/
 --判斷資料表是否存在_如果存在
@@ -84,13 +91,12 @@
 
 
 /********************************************************查看資料庫狀態***************************/
---列出資料庫檔案所在磁碟空間資訊
---查資料庫所在的主機個別還有多少容量
+--列出資料庫檔案所在磁碟空間資訊不含C槽
+--顯示資料庫主機磁碟空間還有多少
 --查出所有資料庫建立路徑
 --查各個資料庫佔用多少空間
 --查詢_SQL_Server_上面全部資料庫的檔案大小_含邏輯檔
 --查看資料庫最後一次備份是哪個時後
---查看單個資料庫所在的磁碟機有多少容量
 --查看SQL服務啟動時間
 --查看資料庫最後一次備份是哪個時間
 --查看預存程序中用到了哪一些資料表
@@ -203,9 +209,8 @@
 /***************************************************************************************************************************************************************************/
 
 
-
+--針對目前資料庫中每個結構描述各傳回一個資料列
 SELECT * FROM INFORMATION_SCHEMA.SCHEMATA
-
 
 ALTER AUTHORIZATION ON SCHEMA::[db_owner] TO [dbo]
 
@@ -215,7 +220,7 @@ ALTER AUTHORIZATION ON SCHEMA::[db_owner] TO [dbo]
 
 
 --資料庫的目前定序
-SELECT CONVERT (VARCHAR(50), DATABASEPROPERTYEX('資料庫名稱','collation'));
+SELECT CONVERT (VARCHAR(50), DATABASEPROPERTYEX('FMS','collation'));
 
 
 --查詢SQL_Server_執行個體的伺服器定序
@@ -242,12 +247,13 @@ SELECT name FROM customer ORDER BY name COLLATE Latin1_General_CS_AI;
 
 
 --算出兩個日期的差距
-DATEDIFF ( datepart , startdate , enddate )
+select DATEDIFF ( datepart , startdate , enddate )
 
 --加減日期
-DATEADD (datepart , number , date )
+select DATEADD (datepart , number , date )
 
---對應的縮寫
+/*
+對應的縮寫
 year                			 --縮寫    yy, yyyy
 quarter                		 --縮寫    qq, q
 month                		 --縮寫    mm, m
@@ -261,7 +267,7 @@ second                		 --縮寫    ss, s
 millisecond                --縮寫    ms
 microsecond             --縮寫    mcs
 nanosecond              --縮寫    ns
-
+*/
  
 
 --VALUES的用法_成為一筆資料
@@ -331,9 +337,9 @@ SELECT O.NAME AS TABLE_NAME,
        LAST_USER_SEEK,
        LAST_USER_SCAN,
        LAST_USER_UPDATE
-FROM SYS.DM_DB_INDEX_USAGE_STATS S
-INNER JOIN SYS.OBJECTS O ON S.OBJECT_ID = O.OBJECT_ID
-INNER JOIN SYS.INDEXES I ON S.INDEX_ID = I.INDEX_ID
+FROM sys.dm_db_index_usage_stats S
+INNER JOIN sys.objects O ON S.OBJECT_ID = O.OBJECT_ID
+INNER JOIN sys.indexes I ON S.INDEX_ID = I.INDEX_ID
 AND I.OBJECT_ID = S.OBJECT_ID
 WHERE S.DATABASE_ID = DB_ID('AdventureWorks2012')
 
@@ -387,12 +393,13 @@ bytesondisk/1024.0  '實體檔案大小kb'
  from fn_virtualfilestats(-1,-1) as a
  where DB_NAME(dbid) like 'test_1%'
 
---查資料庫所在的主機個別還有多少容量
+
+--顯示資料庫主機磁碟空間還有多少
 DECLARE  @SPACE   AS TABLE  (drive varchar(3), size decimal)
 insert into @SPACE EXEC master..xp_fixeddrives 
 SELECT 
 drive AS 'DISK_NAME',
-SIZE/1024.0 AS '剩餘容量(GB)'
+size/1024.0 AS '剩餘容量(GB)'
 FROM @SPACE
 
 --查詢該資料表的最新一筆流水號
@@ -409,59 +416,59 @@ INNER JOIN
     sys.databases db ON db.database_id = mf.database_id
 
 --查各個資料庫佔用多少空間
-WITH FS
-AS
+with fs
+as
 (
-    SELECT DATABASE_ID, TYPE, SIZE * 8.0 / 1024 SIZE
-    FROM SYS.MASTER_FILES
+    select database_id, type, size * 8.0 / 1024 size
+    from sys.master_files
 )
-SELECT TOP 10
-    NAME,
-    (SELECT SUM(SIZE) FROM FS WHERE TYPE = 0 AND FS.DATABASE_ID = DB.DATABASE_ID) DATAFILESIZEMB,
-    (SELECT SUM(SIZE) FROM FS WHERE TYPE = 1 AND FS.DATABASE_ID = DB.DATABASE_ID) LOGFILESIZEMB
-FROM SYS.DATABASES DB
-WHERE DATABASE_ID > 4
-ORDER BY DATAFILESIZEMB DESC
+select top 10
+    name,
+    (select sum(size) from fs where type = 0 and fs.database_id = db.database_id) 'datafilesizemb',
+    (select sum(size) from fs where type = 1 and fs.database_id = db.database_id) 'logfilesizemb'
+from sys.databases db
+where database_id > 4
+order by datafilesizemb desc
 
 --查詢資料庫連線正在執行的語法
-SELECT      R.SCHEDULER_ID AS 排程器識別碼,
-            STATUS         AS 要求的狀態,
-            R.SESSION_ID   AS SPID,
-            R.BLOCKING_SESSION_ID AS BLKBY,
-            SUBSTRING(
-				LTRIM(Q.TEXT),
-				R.STATEMENT_START_OFFSET/2+1,
-				(CASE
-                 WHEN R.STATEMENT_END_OFFSET = -1
-                 THEN LEN(CONVERT(NVARCHAR(MAX), Q.TEXT)) * 2
-                 ELSE R.STATEMENT_END_OFFSET
-                 END - R.STATEMENT_START_OFFSET)/2)
-                 AS [正在執行的 T-SQL 命令],
-            R.CPU_TIME      AS [CPU TIME(MS)],
-            R.START_TIME    AS [開始時間],
-            R.TOTAL_ELAPSED_TIME AS [執行總時間],
-            R.READS              AS [讀取數],
-            R.WRITES             AS [寫入數],
-            R.LOGICAL_READS      AS [邏輯讀取數],
-            Q.TEXT AS [完整的 T-SQL 指令碼],
-            D.NAME               AS [資料庫名稱]
-FROM        SYS.DM_EXEC_REQUESTS R 
-			CROSS APPLY SYS.DM_EXEC_SQL_TEXT(SQL_HANDLE) AS Q
-			LEFT JOIN SYS.DATABASES D ON (R.DATABASE_ID=D.DATABASE_ID)
-WHERE       R.SESSION_ID > 50 AND R.SESSION_ID <> @@SPID
-ORDER BY    R.TOTAL_ELAPSED_TIME DESC
+select      r.scheduler_id as 排程器識別碼,
+            status         as 要求的狀態,
+            r.session_id   as spid,
+            r.blocking_session_id as blkby,
+            substring(
+				ltrim(q.text),
+				r.statement_start_offset/2+1,
+				(case
+                 when r.statement_end_offset = -1
+                 then len(convert(nvarchar(max), q.text)) * 2
+                 else r.statement_end_offset
+                 end - r.statement_start_offset)/2)
+                 as [正在執行的 t-sql 命令],
+            r.cpu_time      as [cpu time(ms)],
+            r.start_time    as [開始時間],
+            r.total_elapsed_time as [執行總時間],
+            r.reads              as [讀取數],
+            r.writes             as [寫入數],
+            r.logical_reads      as [邏輯讀取數],
+            q.text as [完整的 t-sql 指令碼],
+            d.name               as [資料庫名稱]
+from        sys.dm_exec_requests r 
+			cross apply sys.dm_exec_sql_text(sql_handle) as q
+			left join sys.databases d on (r.database_id=d.database_id)
+where       r.session_id > 50 and r.session_id <> @@spid
+order by    r.total_elapsed_time desc
 
 --查詢資料庫所有連線死結狀態
 DECLARE @now datetime DECLARE @whom varchar(100) DECLARE @LoginName varchar(100)
 SET @now = getdate()
 SET @whom = 'ALL' --哪個連線者連進來_預設ALL
-SET @LoginName = 'IFRS9-AP01T'  --哪個資料庫使用者_預設ALL
+SET @LoginName = 'ALL'  --哪個資料庫使用者_預設ALL
 
 
 select * from 
 (SELECT  L.request_session_id AS SPID, 
     DB_NAME(L.resource_database_id) AS DatabaseName,
-    O.Name AS LockedObjectName, 
+    O.name AS LockedObjectName, 
     P.object_id AS LockedObjectId, 
     L.resource_type AS LockedResource, 
     L.request_mode AS LockType,
@@ -498,7 +505,7 @@ SELECT s_name [結構],
        name [TableName],
        [rows],
        reserved [使用(MB)],
-       CONVERT(DECIMAL(15, 2), ROUND(DATA / 128.0, 2)) [資料(MB)],
+       CONVERT(DECIMAL(15, 2), ROUND(data / 128.0, 2)) [資料(MB)],
        CONVERT(DECIMAL(15, 2), ROUND(CASE
                                          WHEN used > [data] THEN used - [data]
                                          ELSE 0
@@ -545,35 +552,39 @@ FROM
 ORDER BY --2    --TableName
  4 DESC
 
+
 --查出所有資料表的資料筆數跟占用大小
 USE FMS 
 GO
-SELECT t.NAME AS TableName, 
- s.Name AS SchemaName,
+SELECT t.name AS TableName, 
+ s.name AS SchemaName,
  p.rows AS RowCounts,
  SUM(a.total_pages) * 8 /1024 AS TotalSpaceMB,
  SUM(a.used_pages) * 8 /1024 AS UsedSpaceMB,
  (SUM(a.total_pages) - SUM(a.used_pages)) * 8 /1024 AS UnusedSpaceMB
 FROM sys.tables t
-INNER JOIN sys.indexes i ON t.OBJECT_ID = i.object_id
-INNER JOIN sys.partitions p ON i.object_id = p.OBJECT_ID
-AND i.index_id = p.index_id
-INNER JOIN sys.allocation_units a ON p.partition_id = a.container_id
-LEFT OUTER JOIN sys.schemas s ON t.schema_id = s.schema_id
-WHERE t.NAME NOT LIKE 'dt%'
-  AND t.is_ms_shipped = 0
-  AND i.OBJECT_ID > 255
-GROUP BY t.Name,
-         s.Name,
-         p.Rows
-ORDER BY t.Name
+inner join sys.indexes i on t.object_id = i.object_id
+inner join sys.partitions p on i.object_id = p.object_id
+and i.index_id = p.index_id
+inner join sys.allocation_units a on p.partition_id = a.container_id
+left outer join sys.schemas s on t.schema_id = s.schema_id
+where t.name not like 'dt%'
+  and t.is_ms_shipped = 0
+  and i.object_id > 255
+group by t.name,
+         s.name,
+         p.rows
+order by t.name
 
 
---查詢資料表流水號是哪個欄位
-SELECT  Column_Name 
-FROM INformation_schema.columns 
-WHERE table_name='API_TEST_THRESH'  ---your table name
-and COLUMNPROPERTY(object_id(TABLE_SCHEMA+'.'+TABLE_NAME),COLUMN_NAME, 'IsIdentity') = 1
+--查詢資料表流水號是哪個欄位(待確認
+select  column_name 
+from information_schema.columns 
+where table_name='api_test_thresh'  ---your table name
+and columnproperty(object_id(table_schema+'.'+table_name),column_name, 'isidentity') = 1
+
+
+
 
 --查詢資料表是否有分割Partition_Table 
 SELECT * 
@@ -600,18 +611,18 @@ FROM ::fn_listextendedproperty(NULL, 'user', 'dbo', 'table', '資料表名稱', 
 SELECT * FROM ::fn_listextendedproperty(NULL, 'user', 'dbo', 'table', '資料表名稱', NULL, NULL)
 
 --新增資料表欄位說明
-execute sp_ADDextendedproperty 'MS_Description', '欄位中文名稱', 'user', 'dbo', 'table', '資料表', 'column', '欄位'
+execute sp_addextendedproperty 'MS_Description', '欄位中文名稱', 'user', 'dbo', 'table', '資料表', 'column', '欄位'
 
 --修改資料表欄位說明
-execute sp_UPDATEextendedproperty 'MS_Description', '欄位中文名稱', 'user', 'dbo', 'table', '資料表', 'column', '欄位'
+execute sp_updateextendedproperty 'MS_Description', '欄位中文名稱', 'user', 'dbo', 'table', '資料表', 'column', '欄位'
 
 --新增資料表的說明
-execute sp_ADDextendedproperty 'MS_Description','資料表的中文名稱', 'user', 'dbo', 'table', '資料表'
+execute sp_addextendedproperty 'MS_Description','資料表的中文名稱', 'user', 'dbo', 'table', '資料表'
 
 --修改資料表的說明
-execute sp_UPDATEextendedproperty 'MS_Description','資料表的中文名稱', 'user', 'dbo', 'table', '資料表'
+execute sp_updateextendedproperty 'MS_Description','資料表的中文名稱', 'user', 'dbo', 'table', '資料表'
 
---列出資料庫檔案所在磁碟空間資訊
+--列出資料庫檔案所在磁碟空間資訊不含C槽
 SELECT distinct volume_mount_point as '磁碟代號', total_bytes/1024/1024/1024 as '磁碟總空間(單位:GB)', available_bytes/1024/1024/1024 '磁碟可用空間(單位:GB)'
  ,cast (convert(float, (available_bytes/1024/1024/1024))/(total_bytes/1024/1024/1024) * 100 as int) as '磁碟空間可用率(%)'
 FROM sys.master_files AS f
@@ -628,18 +639,6 @@ size*8.0/1024 N'檔案大小(MB)',
 max_size N'檔案上限'
 FROM sys.master_files
 order by 5 desc 
-
---列出所有資料庫檔案所在磁碟空間資訊_看不到本身資料庫有多大
-SELECT DB_NAME(f.database_id) as '資料庫名稱' 
-, f.name '資料庫邏輯名稱'
-, f.type_desc '資料庫檔案類型'
-, f.physical_name 
-, volume_mount_point as '磁碟代號'
-, total_bytes/1024/1024/1024 as '磁碟總空間(單位:GB)'
-, available_bytes/1024/1024/1024 '磁碟可用空間(單位:GB)', 
-cast (convert(float, (available_bytes/1024/1024/1024))/(total_bytes/1024/1024/1024) * 100 as int) as '磁碟空間可用率(%)'
-FROM sys.master_files AS f
-CROSS APPLY sys.dm_os_volume_stats(f.database_id, f.file_id);
 
 --查看資料庫最後一次備份是哪個時後
 SELECT D.name 資料庫名稱,
@@ -667,32 +666,23 @@ FROM sys.databases D LEFT JOIN
 ) BS ON D.name = BS.database_name 
 ORDER BY 1;
 
---查看單個資料庫所在的磁碟機有多少容量
-SELECT DISTINCT VOLUME_MOUNT_POINT AS '磁碟代號', TOTAL_BYTES/1024/1024/1024 AS '磁碟總空間(單位:GB)', AVAILABLE_BYTES/1024/1024/1024 '磁碟可用空間(單位:GB)'
- ,CAST (CONVERT(FLOAT, (AVAILABLE_BYTES/1024/1024/1024))/(TOTAL_BYTES/1024/1024/1024) * 100 AS INT) AS '磁碟空間可用率(%)'
-FROM SYS.MASTER_FILES AS F
-CROSS APPLY SYS.DM_OS_VOLUME_STATS(F.DATABASE_ID, F.FILE_ID);
-
 --查看SQL服務啟動時間
---1. SQL Server 2005 以上版本，利用 TempDB 建立時間來判斷
- SELECT [create_date]
-FROM [sys].[databases]
-WHERE [database_id] = 2
---2. SQL Server 2008 以上版本，利用 sys.dm_os_sys_info 
-SELECT @@servername as '資料庫服務名稱',sqlserver_start_time as '資料庫服務啟動時間'
-FROM [sys].[dm_os_sys_info]
---3 SQL Server 2008 以上版本
-SELECT * FROM SYS.DM_SERVER_SERVICES
-USE FU_IFRS16_DB
-SELECT FILE_ID, NAME AS LOGICAL_NAME, PHYSICAL_NAME
-FROM SYS.DATABASE_FILES
+--1. sql server 2005 以上版本，利用 tempdb 建立時間來判斷
+ select [create_date]
+from [sys].[databases]
+where [database_id] = 2
+--2. sql server 2008 以上版本，利用 sys.dm_os_sys_info 
+select @@servername as '資料庫服務名稱',sqlserver_start_time as '資料庫服務啟動時間'
+from [sys].[dm_os_sys_info]
+--3 sql server 2008 以上版本
+select * from sys.dm_server_services
 
 --查詢這整個資料庫所有連線狀態
 DECLARE @now datetime DECLARE @whom varchar(100) DECLARE @loginame varchar(100) DECLARE @DATABASE NVARCHAR (100)
 SET @now = getdate()
 SET @whom = 'ALL' --哪個連線者連進來_預設ALL
 SET @loginame = 'ALL'  --哪個資料庫使用者_預設 ALL    SIGN_SYS_USER
-SET @DATABASE = 'JH_SIGN_ON' --哪個資料庫_預設 ALL     JH_SIGN_ON
+SET @DATABASE = 'ALL' --哪個資料庫_預設 ALL     JH_SIGN_ON
 SET nocount OFF 
 select * from 
 (
@@ -784,11 +774,12 @@ DBName = @DATABASE OR 'ALL' = @DATABASE
 --AND A.STATUS = 'BLOCKED'
 --AND A.DBName = 'JH_SIGN_ON'
 
+
 --查詢所有資料表內結構描述名稱
-SELECT SCHEMA_NAME(SCHEMA_ID)  AS N'結構描述'
-            ,NAME  AS N'資料表名稱'
-            ,'['+SCHEMA_NAME(SCHEMA_ID)+'].['+NAME+']' AS N'完整資料表名稱'
-FROM SYS.TABLES 
+SELECT SCHEMA_NAME(schema_id)  AS N'結構描述'
+            ,name  AS N'資料表名稱'
+            ,'['+SCHEMA_NAME(schema_id)+'].['+name+']' AS N'完整資料表名稱'
+FROM sys.tables 
 ORDER BY 1
 
 --新增使用者與對應登入者
@@ -801,7 +792,7 @@ GO
 IF NOT EXISTS (select loginname from master.dbo.syslogins where name =  N'ifrs_SRV')
 BEGIN
     CREATE LOGIN [ifrs_SRV] WITH PASSWORD=N'SKbank99'
-    , DEFAULT_DATABASE=[JH_DB]
+    , DEFAULT_DATABASE=[FMS]
     , DEFAULT_LANGUAGE=[繁體中文]
     , CHECK_EXPIRATION=OFF
     , CHECK_POLICY=OFF
@@ -809,7 +800,7 @@ END
 ELSE 	ALTER LOGIN [lluser] ENABLE
 
 --新增資料庫的使用者
-USE [JH_DB]
+USE [FMS]
 GO
 /****** Object:  User [ifrs_SRV]    Script Date: 2020/5/14 週四 上午 09:23:20 ******/
 IF  EXISTS (SELECT [name] FROM [sys].[database_principals] WHERE [type] = N'S' AND [name] = N'ifrs_SRV')
@@ -969,15 +960,15 @@ SET IDENTITY_INSERT [dbo].JH_WS02_FM_RULE ON
 SET IDENTITY_INSERT [dbo].JH_WS02_FM_RULE OFF					
 					
 --快速取得資料表所有欄位的名稱					
-DECLARE @TB_NAME VARCHAR(200)
-SET @TB_NAME  = 'ES_ODS_CUR_TRANS_HIST_T'
+declare @tb_name varchar(200)
+set @tb_name  = 'es_ods_cur_trans_hist_t'
 
-SELECT C.NAME + ',' 
-FROM (SELECT C.NAME FROM SYS.TABLES T
-      INNER JOIN SYS.COLUMNS C ON T.object_id = C.object_id
-      WHERE T.NAME = @TB_NAME
-     ) C
-FOR XML PATH('')
+select c.name + ',' 
+from (select c.name from sys.tables t
+      inner join sys.columns c on t.object_id = c.object_id
+      where t.name = @tb_name
+     ) c
+for xml path('')
 
 --快速開啟組態管理員
 開始 > 執行 > 輸入"SQLServerManager11.msc" (針對 SQL Server 2012 版本)
@@ -1572,10 +1563,10 @@ order by table_view, constraint_type, constraint_name
 SELECT O.NAME AS 'PROCEDURES_NAEM',
        OO.NAME AS 'TABLE_NAME',
        C.NAME AS 'COLUMN_NAME'
-FROM SYSDEPENDS D
-INNER JOIN SYSOBJECTS AS O ON O.ID=D.ID
-INNER JOIN SYSOBJECTS AS OO ON OO.ID=D.DEPID
-INNER JOIN SYS.COLUMNS AS C ON C.OBJECT_ID=D.DEPID
+FROM sysdepends D
+INNER JOIN sysobjects AS O ON O.ID=D.ID
+INNER JOIN sysobjects AS OO ON OO.ID=D.DEPID
+INNER JOIN sys.columns AS C ON C.OBJECT_ID=D.DEPID
 AND C.COLUMN_ID=D.DEPNUMBER
 WHERE O.XTYPE = 'P'
 ORDER BY 1,2
@@ -1764,11 +1755,8 @@ WITH VALUES
 
 -- 檢視 SQL Server 目前所有的連線 session ;所有目前的處理序
 SELECT * FROM sys.dm_exec_connections
--- 刪除所有的處理序、連線、session
-EXEC KillUserConnections
--- 再度檢視 SQL Server 目前所有的連線 session ;所有目前的處理序
-SELECT * FROM sys.dm_exec_connections
-GO
+
+
 
 --修改資料表名稱					
 EXEC sp_rename '原本資料表名稱', '要修改的資料表名稱';  
@@ -1825,7 +1813,7 @@ SET @file = '"E:\MSSQL\Backup\' + @table + '_' + CONVERT(CHAR(8), GETDATE(), 112
 SET @cmd = 'bcp ' + @table + ' out ' + @file + ' -n -S192.168.222.162 -Usa -PJHadmin123 '
 
 select @cmd
-EXEC master..xp_cmdshell @cmd"
+EXEC master..xp_cmdshell @cmd
 
 --切換資料庫的狀態為ONLINE
 RESTORE DATABASE [資料庫名稱]
@@ -1878,11 +1866,11 @@ RECONFIGURE;
 select  'bcp IFRSSTG..'+name +' out  "e:\TMP\'+name+'.TXT"    -t "," -r "\n" -c -S192.168.222.183\  -Usa -PJHadmin123'
 FROM
   (SELECT A.name
-   FROM SYS.TABLES AS A
+   FROM sys.tables AS A
    WHERE A.NAME LIKE 'TB_TMP%'
    EXCEPT SELECT A.name
-   FROM SYS.TABLES AS A
-   LEFT  JOIN SYS.COLUMNS AS B ON A.[object_id]=B.[object_id]
+   FROM sys.tables AS A
+   LEFT  JOIN sys.columns AS B ON A.[object_id]=B.[object_id]
    WHERE A.NAME LIKE 'TB_TMP%'
      AND B.NAME ='FILE_DT' ) AS X 
 */
@@ -2121,7 +2109,7 @@ ALTER DATABASE IFRSRPDB_NEW SET MULTI_USER;
 restore database db_name with recovery
 
 --公司慣例_取現在時間的sql語法
-CONVERT(VARCHAR(19), GETDATE(),120)
+select CONVERT(VARCHAR(19), GETDATE(),120)
 
 --以逗點為主擷取特定字元
 SUBSTRING(INPUT_DEFAULT_VAL, 1, CHARINDEX(',', INPUT_DEFAULT_VAL)-1) AS CLASS_NUM,
@@ -2200,16 +2188,18 @@ DBCC CHECKIDENT(JH_WS02_FM_LIST, RESEED, 0)
 
 --縱向欄位值進行橫向合併用法_1
 DECLARE @IN_SQL VARCHAR(MAX)
-SELECT @IN_SQL=ISNULL(+@IN_SQL +' UNION ALL ', '')+ 'SELECT '''+ X.NAME +''',COUNT(*) FROM '+X.NAME
+SELECT @IN_SQL=ISNULL(+@IN_SQL +' UNION ALL ', '')+ 'SELECT '''+ X.name +''',COUNT(*) FROM '+X.name
 FROM
   (SELECT A.name
-   FROM SYS.TABLES AS A
-   WHERE A.NAME LIKE 'TB_TMP%'
+   FROM sys.tables AS A
+   --WHERE A.name LIKE 'TB_TMP%'
    EXCEPT SELECT A.name
-   FROM SYS.TABLES AS A
-   LEFT  JOIN SYS.COLUMNS AS B ON A.[object_id]=B.[object_id]
-   WHERE A.NAME LIKE 'TB_TMP%'
-     AND B.NAME ='FILE_DT' ) AS X --PRINT  @IN_SQL
+   FROM sys.tables AS A
+   LEFT  JOIN sys.columns AS B ON A.[object_id]=B.[object_id]
+   WHERE A.name LIKE 'TB_TMP%'
+     --AND B.name ='FILE_DT'
+     ) AS X 
+     select   @IN_SQL
 EXEC(@IN_SQL)
 
 --縱向欄位值進行橫向合併用法_2
@@ -2300,11 +2290,9 @@ DEALLOCATE spids_cr
 GO
 -- 檢視 SQL Server 目前所有的連線 session ;所有目前的處理序
 SELECT * FROM sys.dm_exec_connections
--- 刪除所有的處理序、連線、session
-EXEC KillUserConnections
--- 再度檢視 SQL Server 目前所有的連線 session ;所有目前的處理序
-SELECT * FROM sys.dm_exec_connections
-GO
+
+
+
 
 
 --利用NAS進行備份或者還原
@@ -2356,7 +2344,7 @@ SELECT DATEADD(M, DATEDIFF(M,0,GETDATE()),0)
 SELECT DATEADD(DAY ,-1, DATEADD(M, DATEDIFF(M,0,GETDATE())+1,0))  
 
 
-
+/*
 --查資料庫使用者帳密
 USE DBUSE_THRESH
 GO 
@@ -2389,7 +2377,7 @@ WHERE
  AND(([PROJECT_DESC]    =  @PROJECT_DESC  ) OR ( @PROJECT_DESC   = 'ALL') )
  AND(([PROJECT_STAGE]   =  @PROJECT_STAGE ) OR ( @PROJECT_STAGE  = 'ALL') )
  AND(([DB_VERSION]      =  @DB_VERSION    ) OR ( @DB_VERSION     = 'ALL') )
-
+ */
 
 				
 				
