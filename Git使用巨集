@@ -20,7 +20,7 @@
 git clone https://github.com/bestworkthresh/Thresh_Work_sricpt.git
 
 #確認現在git的狀況
-git stasus
+git status
 
 #將檔案複製到index端
 git add .
