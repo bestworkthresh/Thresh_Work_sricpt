@@ -1,0 +1,14 @@
+/*
+SP¦WºÙ
+[s_Chk_AgentJobStatus]
+*/
+
+use Reserv20170829
+GO 
+
+
+
+select * 
+from [Reserv20170829].[dbo].[frsJobStatus]
+where JobOutcome = 'Failed'
+
