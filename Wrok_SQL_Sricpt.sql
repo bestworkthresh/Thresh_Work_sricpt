@@ -201,6 +201,8 @@
 --取得當月的第一天
 --當月的最後一天
 --利用語法讓主機無限loop
+--另外一種語法讓主機無限loop
+--利用語法讓主機loop特定次數
 
 /********************************************************************定序************************/
 --查詢伺服器的所有可用定序
@@ -210,7 +212,31 @@
 --修改cloumns定序
 --運算式層級定序
 
+/********************************************************************系統資料表************************/
+--傳回所有執行中之執行緒所有等候的相關資訊all_supported_versions
+--傳回特定session執行緒所有等候資訊forsql2016_and_later
+--清空系統資料表
+
+
+
 /***************************************************************************************************************************************************************************/
+
+
+
+
+
+
+
+--傳回所有執行中之執行緒所有等候的相關資訊all_supported_versions
+select * from sys.dm_os_wait_stats
+
+--傳回特定session執行緒所有等候資訊forsql2016_and_later
+select * from sys.dm_exec_session_wait_stats
+
+--清空系統資料表
+DBCC SQLPERF ('sys.dm_os_wait_stats', CLEAR);  
+GO  
+
 
 
 
@@ -222,6 +248,24 @@ select SUSER_NAME ( ) as 'login_user' ,  USER_NAME ( ) 'user '
 WHILE 1 = 1 
 BEGIN 
 	DECLARE @V INT = 1 
+END
+
+--另外一種語法讓主機無限loop
+DECLARE @Counter INT 
+SET @Counter=1
+WHILE ( @Counter <= 10)
+BEGIN
+    PRINT 'Somebody stops me!'
+  
+END
+
+--利用語法讓主機loop特定次數
+DECLARE @Counter INT 
+SET @Counter=1
+WHILE ( @Counter <= 10)
+BEGIN
+    PRINT 'The counter value is = ' + CONVERT(VARCHAR,@Counter)
+    SET @Counter  = @Counter  + 1
 END
 
 --針對目前資料庫中每個結構描述各傳回一個資料列
