@@ -1,0 +1,22 @@
+USE FMS
+
+        --INSERT INTO Reserv20170829.dbo.DBACHKRebuildList
+        SELECT DB_NAME() AS DB_Name,
+          t.IndexName,
+          t.Schema_Name,
+          'ALTER INDEX [' + t.IndexName + '] ON [' + DB_NAME() + '].[' + t.Schema_Name + '].[' + t.Table_Name + '] ' + ' REBUILD;' AS Scripts,
+          ps.avg_fragmentation_in_percent,
+		  0
+        FROM Reserv20170829.dbo.IndexesForRebuild t
+        INNER JOIN (
+        SELECT object_id,
+          index_id,
+          avg_fragmentation_in_percent,
+          partition_number
+        FROM FMS.sys.dm_db_index_physical_stats(DB_ID(), NULL, NULL, NULL, NULL)
+        ) ps ON t.Table_ID = ps.object_id
+        AND t.Index_ID = ps.index_id
+        WHERE 1=1
+        AND ps.avg_fragmentation_in_percent >= 15 --處理破碎程度10以上的資料
+        AND t.Index_ID IS NOT NULL --type_desc=HEAP的資料不抓
+        ORDER BY ps.avg_fragmentation_in_percent DESC

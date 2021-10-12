@@ -14,7 +14,7 @@
 declare @xelpath nvarchar(200) 
 declare @xelpathall nvarchar(200) 
 
-/*這個參數是取最新的那個參數檔*/
+/*這個參數是取最新的那個參數檔 (正在讀取 - dm_xe_session_targets)*/
 select   @xelpath = cast(t.target_data as xml).value(N'(EventFileTarget/File/@name)[1]', N'nvarchar(200)') 
 from sys.dm_xe_sessions s
 inner join sys.dm_xe_session_targets t on s.address = t.event_session_address
@@ -39,6 +39,7 @@ from (
 	,xml_event_data.value(N'(event/action[@name="client_app_name"]/value)[1]', N'nvarchar(60)') as client_app_name
 	,xml_event_data.value(N'(event/action[@name="server_instance_name"]/value)[1]', N'nvarchar(20)') as server_instance_name
 	,xml_event_data.value(N'(event/data[@name="message"]/value)[1]', N'nvarchar(max)') as [message]
+	,xml_event_data.value(N'(event/action[@name="database_name"]/value)[1]', N'nvarchar(max)') as [database_name]
 	,xml_event_data.value(N'(event/action[@name="sql_text"]/value)[1]', N'nvarchar(max)') as [sql_text]
 	from (
 		select cast(event_data as xml) as xml_event_data
@@ -48,5 +49,5 @@ from (
 		where object_name = 'error_reported' 
 	) m
 )t
-where date_time > '20210925'
+where date_time > '20211012'
 
