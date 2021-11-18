@@ -39,7 +39,6 @@
 --修改使用者權限_用lluser為例
 --新增LOGIN
 --新增USER並綁定LOGIN並把權限提高到OWNER
---查詢現在的login跟user
 
 /*******************************************************資料表****************************/
 --快速取得資料表所有欄位的名稱
@@ -152,8 +151,6 @@
 /***************************************************************記憶體佔用*******************************/
 --查看各資料表佔用多少記憶體
 --記憶體資料表總共佔用多少記憶體
---所有記憶體節點之每個職員類型的摘要資訊
---檢視Buffer Pool所使用實體記憶體 
 
 /***************************************************************資源集區**********************************/
 --查出所有資料庫對應的資源集區_null表示為預設
@@ -200,9 +197,6 @@
 --查資料庫使用者帳密
 --取得當月的第一天
 --當月的最後一天
---利用語法讓主機無限loop
---另外一種語法讓主機無限loop
---利用語法讓主機loop特定次數
 
 /********************************************************************定序************************/
 --查詢伺服器的所有可用定序
@@ -212,61 +206,8 @@
 --修改cloumns定序
 --運算式層級定序
 
-/********************************************************************系統資料表************************/
---傳回所有執行中之執行緒所有等候的相關資訊all_supported_versions
---傳回特定session執行緒所有等候資訊forsql2016_and_later
---清空系統資料表
-
-
-
 /***************************************************************************************************************************************************************************/
 
-
-
-
-
-
-
---傳回所有執行中之執行緒所有等候的相關資訊all_supported_versions
-select * from sys.dm_os_wait_stats
-
---傳回特定session執行緒所有等候資訊forsql2016_and_later
-select * from sys.dm_exec_session_wait_stats
-
---清空系統資料表
-DBCC SQLPERF ('sys.dm_os_wait_stats', CLEAR);  
-GO  
-
-
-
-
---查詢現在的login跟user
-select SUSER_NAME ( ) as 'login_user' ,  USER_NAME ( ) 'user '
-
-
---利用語法讓主機無限loop
-WHILE 1 = 1 
-BEGIN 
-	DECLARE @V INT = 1 
-END
-
---另外一種語法讓主機無限loop
-DECLARE @Counter INT 
-SET @Counter=1
-WHILE ( @Counter <= 10)
-BEGIN
-    PRINT 'Somebody stops me!'
-  
-END
-
---利用語法讓主機loop特定次數
-DECLARE @Counter INT 
-SET @Counter=1
-WHILE ( @Counter <= 10)
-BEGIN
-    PRINT 'The counter value is = ' + CONVERT(VARCHAR,@Counter)
-    SET @Counter  = @Counter  + 1
-END
 
 --針對目前資料庫中每個結構描述各傳回一個資料列
 SELECT * FROM INFORMATION_SCHEMA.SCHEMATA
@@ -737,11 +678,12 @@ from [sys].[dm_os_sys_info]
 select * from sys.dm_server_services
 
 --查詢這整個資料庫所有連線狀態
-DECLARE @now datetime DECLARE @whom varchar(100) DECLARE @loginame varchar(100) DECLARE @DATABASE NVARCHAR (100)
+DECLARE @now datetime DECLARE @whom varchar(100) DECLARE @loginame varchar(100) DECLARE @DATABASE NVARCHAR (100) DECLARE @hostname NVARCHAR(50)
 SET @now = getdate()
 SET @whom = 'ALL' --哪個連線者連進來_預設ALL
-SET @loginame = 'ALL'  --哪個資料庫使用者_預設 ALL    SIGN_SYS_USER
-SET @DATABASE = 'ALL' --哪個資料庫_預設 ALL     JH_SIGN_ON
+SET @loginame = 'ALL'  --哪個資料庫使用者_預設 ALL    FRTAAP02
+SET @DATABASE = 'ALL' --哪個資料庫_預設 ALL     FMS
+SET @hostname = 'FRTAAP01'
 SET nocount OFF 
 select * from 
 (
@@ -827,6 +769,7 @@ WHERE 1 = 1
        OR 'ALL' = @whom)
   AND (loginame = @loginame OR 'ALL' = @loginame )
   AND spid>50
+  AND hostname = @hostname OR 'ALL' = @hostname
   )as a
 WHERE 
 DBName = @DATABASE OR 'ALL' = @DATABASE
@@ -1861,7 +1804,6 @@ REBUILD PARTITION = ALL
 WITH (DATA_COMPRESSION = NONE)	
 
 --利用語法來產BCP語法用來備份單一資料表
-/*
 -- SQL Table Backup
 -- Developed by DBATAG, www.DBATAG.com
 DECLARE @table VARCHAR(128),
@@ -1874,7 +1816,7 @@ SET @cmd = 'bcp ' + @table + ' out ' + @file + ' -n -S192.168.222.162 -Usa -PJHa
 
 select @cmd
 EXEC master..xp_cmdshell @cmd
-*/
+
 --切換資料庫的狀態為ONLINE
 RESTORE DATABASE [資料庫名稱]
 WITH RECOVERY
@@ -2404,27 +2346,41 @@ SELECT DATEADD(M, DATEDIFF(M,0,GETDATE()),0)
 SELECT DATEADD(DAY ,-1, DATEADD(M, DATEDIFF(M,0,GETDATE())+1,0))  
 
 
---取得所有記憶體節點之每個職員類型的摘要資訊
-select
-type,
-sum(virtual_memory_reserved_kb) as [VM Reserved],
-sum(virtual_memory_committed_kb) as [VM Committed],
-sum(awe_allocated_kb) as [AWE Allocated],
-sum(shared_memory_reserved_kb) as [SM Reserved],
-sum(shared_memory_committed_kb) as [SM Committed]
---sum(multi_pages_kb) as [MultiPage Allocator],
---sum(single_pages_kb) as [SinlgePage Allocator]
-from
-sys.dm_os_memory_clerks
-group by type
+/*
+--查資料庫使用者帳密
+USE DBUSE_THRESH
+GO 
+
+DECLARE @PROJECT_NAME   NVARCHAR(50)        SET @PROJECT_NAME   ='ALL'      --PROJECT_NAME  
+DECLARE @IP             NVARCHAR(50)        SET @IP             ='ALL'      --IP            
+DECLARE @STAGE_DESC     NVARCHAR(50)        SET @STAGE_DESC     ='ALL'      --STAGE_DESC    
+DECLARE @USER           NVARCHAR(50)        SET @USER           ='ALL'      --USER          
+DECLARE @PASSWORD       NVARCHAR(50)        SET @PASSWORD       ='ALL'      --PASSWORD      
+DECLARE @PROJECT_DESC   NVARCHAR(50)        SET @PROJECT_DESC   ='ALL'      --PROJECT_DESC  
+DECLARE @PROJECT_STAGE  NVARCHAR(50)        SET @PROJECT_STAGE  ='ALL'      --PROJECT_STAGE 
+DECLARE @DB_VERSION     NVARCHAR(50)        SET @DB_VERSION     ='ALL'      --DB_VERSION    
 
 
+SELECT      [PK_CODE]
+           ,[PROJECT_NAME]
+           ,[IP]
+           ,[STAGE_DESC]
+           ,[USER]
+           ,[PASSWORD]
+           ,[PROJECT_DESC]
+           ,[PROJECT_STAGE]
+           ,[DB_VERSION] FROM [TH_SYS_DATABASE_LIST]
+WHERE 
+    (([PROJECT_NAME]    =  @PROJECT_NAME  ) OR ( @PROJECT_NAME   = 'ALL') )
+ AND(([IP]              =  @IP            ) OR ( @IP             = 'ALL') )
+ AND(([STAGE_DESC]      =  @STAGE_DESC    ) OR ( @STAGE_DESC     = 'ALL') )
+ AND(([USER]            =  @USER          ) OR ( @USER           = 'ALL') )
+ AND(([PASSWORD]        =  @PASSWORD      ) OR ( @PASSWORD       = 'ALL') )
+ AND(([PROJECT_DESC]    =  @PROJECT_DESC  ) OR ( @PROJECT_DESC   = 'ALL') )
+ AND(([PROJECT_STAGE]   =  @PROJECT_STAGE ) OR ( @PROJECT_STAGE  = 'ALL') )
+ AND(([DB_VERSION]      =  @DB_VERSION    ) OR ( @DB_VERSION     = 'ALL') )
+ */
 
---檢視Buffer Pool所使用實體記憶體 
-SELECT 
-ISNULL(DB_NAME(database_id),'TEST') AS DatabaseName
-,CAST(COUNT(row_count)*8.0/(1024.0)AS DECIMAL(282))AS [Size (MB)]
-FROM sys.dm_os_buffer_descriptors
-group by database_id
-order by DatabaseName
-
+				
+				
+				
