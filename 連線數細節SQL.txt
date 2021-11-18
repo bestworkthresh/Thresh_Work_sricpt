@@ -3,9 +3,9 @@
 DECLARE @now datetime DECLARE @whom varchar(100) DECLARE @loginame varchar(100) DECLARE @DATABASE NVARCHAR (100) DECLARE @hostname NVARCHAR(50)
 SET @now = getdate()
 SET @whom = 'ALL' --哪個連線者連進來_預設ALL
-SET @loginame = 'ALL'  --哪個資料庫使用者_預設 ALL    FRTAAP02
+SET @loginame = 'ALL'  --哪個資料庫使用者_預設 ALL    
 SET @DATABASE = 'ALL' --哪個資料庫_預設 ALL     FMS
-SET @hostname = 'FRTAAP01'
+SET @hostname = 'ALL' --hostname_預設 ALL     FRTAAP02
 SET nocount OFF 
 select * from 
 (
