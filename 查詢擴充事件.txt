@@ -8,6 +8,10 @@
 修改日期:20210927
 修改者:Thresh
 修改目的:新增查看sql_text欄位，以供確認
+
+修改日期:20211124
+修改者:Thresh
+修改目的:修正時間，因為查出來的時間是格林威治時間，所以後來+8H
 ==========================
 */
 
@@ -32,9 +36,11 @@ inner join sys.dm_xe_session_targets t on s.address = t.event_session_address
 where s.name = 'XTN_Maintenance_Base' 
 */
 
-select *
+select 
+*
+--distinct client_hostname,client_app_name,server_instance_name,[message],[database_name],[sql_text]
 from (
-	select  xml_event_data.value(N'(event/@timestamp)[1]', N'datetime') as date_time
+	select  DATEADD(HH,+8,xml_event_data.value(N'(event/@timestamp)[1]', N'datetime')) as date_time
 	,xml_event_data.value(N'(event/action[@name="client_hostname"]/value)[1]', N'nvarchar(20)') as client_hostname
 	,xml_event_data.value(N'(event/action[@name="client_app_name"]/value)[1]', N'nvarchar(60)') as client_app_name
 	,xml_event_data.value(N'(event/action[@name="server_instance_name"]/value)[1]', N'nvarchar(20)') as server_instance_name
@@ -49,5 +55,12 @@ from (
 		where object_name = 'error_reported' 
 	) m
 )t
-where date_time > '20211012'
+where 1=1 
+and date_time > '20211123'
+and message not like '自動統計資料內部%'
+--and client_hostname not in ('H8FRP011','H8FRP012')
+--and message like '%快照集隔離交易失敗%'
+--and database_name = 'FMS'
+order by 1
 
+         
