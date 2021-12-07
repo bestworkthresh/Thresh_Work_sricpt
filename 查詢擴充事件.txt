@@ -1,3 +1,5 @@
+
+
 /*
 作者:集英
 日期:20210906
@@ -56,8 +58,9 @@ from (
 	) m
 )t
 where 1=1 
-and date_time > '20211123'
-and message not like '自動統計資料內部%'
+and date_time > '20211204'
+and client_app_name not like '%Microsoft SQL Server Management Studio%'
+--and message not like '自動統計資料內部%'
 --and client_hostname not in ('H8FRP011','H8FRP012')
 --and message like '%快照集隔離交易失敗%'
 --and database_name = 'FMS'
