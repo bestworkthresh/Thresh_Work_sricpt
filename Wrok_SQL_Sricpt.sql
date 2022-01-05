@@ -1811,7 +1811,7 @@ DECLARE @table VARCHAR(128),
 @cmd VARCHAR(512)
 SET @table = 'TEST_THRESH..JH_WS02_CODE_FORMAT_LIST' --  Table Name which you want    to backup
 SET @file = '"E:\MSSQL\Backup\' + @table + '_' + CONVERT(CHAR(8), GETDATE(), 112) --  Replace C:\MSSQL\Backup\ to destination dir where you want to place table data backup
-+ '.dat"'
++ '.dat"'"
 SET @cmd = 'bcp ' + @table + ' out ' + @file + ' -n -S192.168.222.162 -Usa -PJHadmin123 '
 
 select @cmd
