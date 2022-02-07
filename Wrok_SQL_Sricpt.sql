@@ -96,6 +96,7 @@
 --查出所有資料庫建立路徑
 --查各個資料庫佔用多少空間
 --查詢_SQL_Server_上面全部資料庫的檔案大小_含邏輯檔
+--查詢_SQL_Server_上面全部資料庫大小
 --查看資料庫最後一次備份是哪個時後
 --查看SQL服務啟動時間
 --查看資料庫最後一次備份是哪個時間
@@ -639,6 +640,16 @@ size*8.0/1024 N'檔案大小(MB)',
 max_size N'檔案上限'
 FROM sys.master_files
 order by 5 desc 
+
+--查詢_SQL_Server_上面全部資料庫大小
+SELECT      sys.databases.name,  
+            CONVERT(VARCHAR,SUM(size)*8/1024)+' MB' AS [Total disk space]  
+FROM        sys.databases   
+JOIN        sys.master_files  
+ON          sys.databases.database_id=sys.master_files.database_id  
+GROUP BY    sys.databases.name  
+ORDER BY    sys.databases.name  
+
 
 --查看資料庫最後一次備份是哪個時後
 SELECT D.name 資料庫名稱,
