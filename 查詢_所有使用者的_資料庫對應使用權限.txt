@@ -1,0 +1,31 @@
+--查詢_所有使用者的_資料庫對應使用權限
+/*建立暫存資料表*/
+IF EXISTS (select * from tempdb.sys.tables where name= '##DBNAME')
+BEGIN
+DROP TABLE ##DBNAME
+END
+
+CREATE TABLE ##DBNAME 
+(DBName NVARCHAR (90)
+,DBRole NVARCHAR (90)
+,MemberName NVARCHAR (90)
+)
+
+/*將結果依序寫入*/
+EXECUTE master.sys.sp_MSforeachdb
+'USE [?];
+insert into ##DBNAME (DBName,DBRole,MemberName)
+select ''?'' DBName, DBRole = g.name, MemberName = u.name
+From sys.database_principals u, sys.database_principals g, sys.database_role_members m
+Where g.principal_id = m.role_principal_id And u.principal_id = m.member_principal_id			 
+Order by 1, 2, 3' 
+
+/*輸出結果*/
+DECLARE @DBName NVARCHAR (50) = 'FRSMETA'
+DECLARE @USERName NVARCHAR (50) = 'dbop3'
+
+select MemberName,DBName,DBRole from ##DBNAME 
+where DBName NOT IN ('master','tempdb','model','msdb')
+--and DBName = @DBName
+--and MemberName = @USERName
+order by 1,2
