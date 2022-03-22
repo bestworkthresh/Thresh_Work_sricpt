@@ -14,6 +14,11 @@
 修改日期:20211124
 修改者:Thresh
 修改目的:修正時間，因為查出來的時間是格林威治時間，所以後來+8H
+
+修改日期:20220322
+修改者:Thresh
+修改目的:新增查詢欄位username 來追蹤
+
 ==========================
 */
 
@@ -42,13 +47,15 @@ select
 *
 --distinct client_hostname,client_app_name,server_instance_name,[message],[database_name],[sql_text]
 from (
-	select  DATEADD(HH,+8,xml_event_data.value(N'(event/@timestamp)[1]', N'datetime')) as date_time
+	select
+	 xml_event_data.value(N'(event/action[@name="client_app_name"]/value)[1]', N'nvarchar(60)') as client_app_name
 	,xml_event_data.value(N'(event/action[@name="client_hostname"]/value)[1]', N'nvarchar(20)') as client_hostname
-	,xml_event_data.value(N'(event/action[@name="client_app_name"]/value)[1]', N'nvarchar(60)') as client_app_name
-	,xml_event_data.value(N'(event/action[@name="server_instance_name"]/value)[1]', N'nvarchar(20)') as server_instance_name
-	,xml_event_data.value(N'(event/data[@name="message"]/value)[1]', N'nvarchar(max)') as [message]
 	,xml_event_data.value(N'(event/action[@name="database_name"]/value)[1]', N'nvarchar(max)') as [database_name]
-	,xml_event_data.value(N'(event/action[@name="sql_text"]/value)[1]', N'nvarchar(max)') as [sql_text]
+	,DATEADD(HH,+8,xml_event_data.value(N'(event/@timestamp)[1]', N'datetime')) as date_time
+	,xml_event_data.value(N'(event/data[@name="message"]/value)[1]', N'nvarchar(max)') as [message]
+	,REPLACE( xml_event_data.value(N'(event/action[@name="sql_text"]/value)[1]', N'nvarchar(max)'),char(10),' ') as [sql_text]
+	,xml_event_data.value(N'(event/action[@name="server_instance_name"]/value)[1]', N'nvarchar(20)') as server_instance_name
+	,xml_event_data.value(N'(event/action[@name="username"]/value)[1]', N'nvarchar(20)') as username
 	from (
 		select cast(event_data as xml) as xml_event_data
 		from sys.fn_xe_file_target_read_file
@@ -58,12 +65,13 @@ from (
 	) m
 )t
 where 1=1 
-and date_time > '20211204'
-and client_app_name not like '%Microsoft SQL Server Management Studio%'
+and date_time > '20220322'
+--and client_app_name not like '%Microsoft SQL Server Management Studio%'
 --and message not like '自動統計資料內部%'
 --and client_hostname not in ('H8FRP011','H8FRP012')
---and message like '%快照集隔離交易失敗%'
+--and message not like '%快照集隔離交易失敗%'
 --and database_name = 'FMS'
-order by 1
+order by date_time
+
 
          
